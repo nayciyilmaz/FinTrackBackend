@@ -8,6 +8,7 @@ public enum ErrorCode {
     USER_NOT_FOUND(1001, "Bu e-posta ile kayıtlı kullanıcı bulunamadı.", HttpStatus.NOT_FOUND),
     EMAIL_ALREADY_EXISTS(1002, "Bu e-posta adresi zaten kayıtlı.", HttpStatus.CONFLICT),
     INVALID_CREDENTIALS(1003, "Şifre hatalı.", HttpStatus.UNAUTHORIZED),
+    GOOGLE_AUTH_FAILED(1004, "Google kimlik doğrulama başarısız.", HttpStatus.UNAUTHORIZED),
     INTERNAL_SERVER_ERROR(9000, "Sunucu hatası oluştu.", HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final int code;

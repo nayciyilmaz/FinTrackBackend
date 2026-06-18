@@ -28,8 +28,13 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String password;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_provider", nullable = false, columnDefinition = "VARCHAR(10) DEFAULT 'LOCAL'")
+    @Builder.Default
+    private AuthProvider authProvider = AuthProvider.LOCAL;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
