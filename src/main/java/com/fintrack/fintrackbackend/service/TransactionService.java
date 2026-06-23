@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -48,6 +50,27 @@ public class TransactionService {
         log.info("İşlem eklendi: id={}, email={}", saved.getId(), email);
 
         return toResponseDto(saved);
+    }
+
+    public List<TransactionResponseDto> getTransactions(String email, String type, String startDate, String endDate) {
+        log.info("İşlem listesi isteği: email={}, type={}, startDate={}, endDate={}", email, type, startDate, endDate);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        LocalDate start = LocalDate.parse(startDate);
+        LocalDate end = LocalDate.parse(endDate);
+
+        List<Transaction> transactions;
+        if (type != null && !type.isBlank()) {
+            transactions = transactionRepository.findByUserAndTypeAndDateBetweenOrderByDateDescTimeDesc(
+                    user, TransactionType.valueOf(type), start, end
+            );
+        } else {
+            transactions = transactionRepository.findByUserAndDateBetweenOrderByDateDescTimeDesc(user, start, end);
+        }
+
+        return transactions.stream().map(this::toResponseDto).collect(Collectors.toList());
     }
 
     private TransactionResponseDto toResponseDto(Transaction t) {
