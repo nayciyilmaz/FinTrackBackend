@@ -73,6 +73,37 @@ public class TransactionService {
         return transactions.stream().map(this::toResponseDto).collect(Collectors.toList());
     }
 
+    public TransactionResponseDto updateTransaction(String email, Long id, TransactionRequestDto dto) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        Transaction transaction = transactionRepository.findById(id)
+                .filter(t -> t.getUser().getId().equals(user.getId()))
+                .orElseThrow(() -> new BusinessException(ErrorCode.TRANSACTION_NOT_FOUND));
+
+        transaction.setType(TransactionType.valueOf(dto.getType()));
+        transaction.setCategory(dto.getCategory());
+        transaction.setAmount(dto.getAmount());
+        transaction.setNote(dto.getNote());
+        transaction.setDate(LocalDate.parse(dto.getDate()));
+        transaction.setTime(LocalTime.parse(dto.getTime()));
+        transaction.setIsRecurring(dto.getRecurring());
+        transaction.setIsReminder(dto.getReminder());
+
+        return toResponseDto(transactionRepository.save(transaction));
+    }
+
+    public void deleteTransaction(String email, Long id) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        Transaction transaction = transactionRepository.findById(id)
+                .filter(t -> t.getUser().getId().equals(user.getId()))
+                .orElseThrow(() -> new BusinessException(ErrorCode.TRANSACTION_NOT_FOUND));
+
+        transactionRepository.delete(transaction);
+    }
+
     private TransactionResponseDto toResponseDto(Transaction t) {
         return TransactionResponseDto.builder()
                 .id(t.getId())
