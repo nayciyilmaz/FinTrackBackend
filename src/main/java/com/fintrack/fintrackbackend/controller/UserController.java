@@ -2,6 +2,7 @@ package com.fintrack.fintrackbackend.controller;
 
 import com.fintrack.fintrackbackend.dto.GoogleAuthRequestDto;
 import com.fintrack.fintrackbackend.dto.LoginRequestDto;
+import com.fintrack.fintrackbackend.dto.RefreshTokenRequestDto;
 import com.fintrack.fintrackbackend.dto.UserRequestDto;
 import com.fintrack.fintrackbackend.dto.UserResponseDto;
 import com.fintrack.fintrackbackend.service.UserService;
@@ -30,5 +31,10 @@ public class UserController {
     @PostMapping("/api/auth/google")
     public ResponseEntity<UserResponseDto> googleLogin(@RequestBody @Valid GoogleAuthRequestDto request) {
         return ResponseEntity.ok(userService.loginWithGoogle(request.getIdToken()));
+    }
+
+    @PostMapping("/api/auth/refresh")
+    public ResponseEntity<UserResponseDto> refreshToken(@RequestBody @Valid RefreshTokenRequestDto request) {
+        return ResponseEntity.ok(userService.refreshToken(request.getRefresh_token()));
     }
 }

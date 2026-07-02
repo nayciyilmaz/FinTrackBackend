@@ -15,5 +15,6 @@ public interface UserMapper {
 
     @Mapping(source = "user.firstName", target = "first_name")
     @Mapping(source = "user.lastName", target = "last_name")
-    UserResponseDto mapToDto(User user, String token);
+    @Mapping(source = "refreshToken", target = "refresh_token")
+    UserResponseDto mapToDto(User user, String token, String refreshToken);
 }

@@ -14,6 +14,7 @@ public class UserResponseDto {
     private String last_name;
     private String email;
     private String token;
+    private String refresh_token;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
