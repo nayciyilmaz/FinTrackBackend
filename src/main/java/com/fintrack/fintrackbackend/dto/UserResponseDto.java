@@ -13,6 +13,7 @@ public class UserResponseDto {
     private String first_name;
     private String last_name;
     private String email;
+    private Integer payday;
     private String token;
     private String refresh_token;
     private LocalDateTime createdAt;

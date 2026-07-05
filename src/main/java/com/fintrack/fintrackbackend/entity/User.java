@@ -31,6 +31,10 @@ public class User {
     @Column(nullable = true)
     private String password;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer payday = 1;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "auth_provider", nullable = false, columnDefinition = "VARCHAR(10) DEFAULT 'LOCAL'")
     @Builder.Default
