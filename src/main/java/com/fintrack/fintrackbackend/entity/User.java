@@ -42,12 +42,14 @@ public class User {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime passwordChangedAt;
 
     @PrePersist
     public void create() {
         var now = LocalDateTime.now();
         createdAt = now;
         updatedAt = now;
+        passwordChangedAt = now;
     }
 
     @PreUpdate

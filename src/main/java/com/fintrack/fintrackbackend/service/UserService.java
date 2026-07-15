@@ -157,6 +157,9 @@ public class UserService {
     public UserProfileResponseDto getCurrentUser(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        if (user.getPasswordChangedAt() == null) {
+            user.setPasswordChangedAt(user.getCreatedAt());
+        }
         return mapper.mapToProfileDto(user);
     }
 

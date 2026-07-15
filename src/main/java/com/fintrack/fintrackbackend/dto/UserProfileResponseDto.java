@@ -13,4 +13,5 @@ public class UserProfileResponseDto {
     private String lastName;
     private String email;
     private LocalDateTime createdAt;
+    private LocalDateTime passwordChangedAt;
 }
