@@ -1,5 +1,6 @@
 package com.fintrack.fintrackbackend.mapper;
 
+import com.fintrack.fintrackbackend.dto.UserProfileResponseDto;
 import com.fintrack.fintrackbackend.dto.UserRequestDto;
 import com.fintrack.fintrackbackend.dto.UserResponseDto;
 import com.fintrack.fintrackbackend.entity.User;
@@ -19,4 +20,6 @@ public interface UserMapper {
     @Mapping(source = "user.payday", target = "payday")
     @Mapping(source = "refreshToken", target = "refresh_token")
     UserResponseDto mapToDto(User user, String token, String refreshToken);
+
+    UserProfileResponseDto mapToProfileDto(User user);
 }

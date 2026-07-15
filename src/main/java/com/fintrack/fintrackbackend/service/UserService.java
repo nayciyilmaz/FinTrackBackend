@@ -1,5 +1,6 @@
 package com.fintrack.fintrackbackend.service;
 
+import com.fintrack.fintrackbackend.dto.UserProfileResponseDto;
 import com.fintrack.fintrackbackend.dto.UserRequestDto;
 import com.fintrack.fintrackbackend.dto.UserResponseDto;
 import com.fintrack.fintrackbackend.entity.AuthProvider;
@@ -151,6 +152,12 @@ public class UserService {
         log.info("Token yenileme başarılı: email={}", user.getEmail());
 
         return mapper.mapToDto(user, accessToken, newRefreshToken.getToken());
+    }
+
+    public UserProfileResponseDto getCurrentUser(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        return mapper.mapToProfileDto(user);
     }
 
     private RefreshToken createRefreshToken(User user) {
