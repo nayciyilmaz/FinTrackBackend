@@ -163,6 +163,18 @@ public class UserService {
         return mapper.mapToProfileDto(user);
     }
 
+    @Transactional
+    public void logout(String email) {
+        log.info("Çıkış isteği: email={}", email);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        refreshTokenRepository.deleteByUserId(user.getId());
+
+        log.info("Çıkış başarılı: email={}", email);
+    }
+
     private RefreshToken createRefreshToken(User user) {
         RefreshToken refreshToken = RefreshToken.builder()
                 .token(UUID.randomUUID().toString())

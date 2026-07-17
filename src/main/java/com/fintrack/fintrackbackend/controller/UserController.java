@@ -45,4 +45,10 @@ public class UserController {
     public ResponseEntity<UserProfileResponseDto> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(userService.getCurrentUser(userDetails.getUsername()));
     }
+
+    @PostMapping("/api/users/me/logout")
+    public ResponseEntity<Void> logout(@AuthenticationPrincipal UserDetails userDetails) {
+        userService.logout(userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
 }
