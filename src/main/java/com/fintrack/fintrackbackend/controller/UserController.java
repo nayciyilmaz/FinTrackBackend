@@ -1,8 +1,12 @@
 package com.fintrack.fintrackbackend.controller;
 
+import com.fintrack.fintrackbackend.dto.EmailUpdateResponseDto;
 import com.fintrack.fintrackbackend.dto.GoogleAuthRequestDto;
 import com.fintrack.fintrackbackend.dto.LoginRequestDto;
 import com.fintrack.fintrackbackend.dto.RefreshTokenRequestDto;
+import com.fintrack.fintrackbackend.dto.UpdateEmailRequestDto;
+import com.fintrack.fintrackbackend.dto.UpdateNameRequestDto;
+import com.fintrack.fintrackbackend.dto.UpdatePasswordRequestDto;
 import com.fintrack.fintrackbackend.dto.UserProfileResponseDto;
 import com.fintrack.fintrackbackend.dto.UserRequestDto;
 import com.fintrack.fintrackbackend.dto.UserResponseDto;
@@ -50,5 +54,29 @@ public class UserController {
     public ResponseEntity<Void> logout(@AuthenticationPrincipal UserDetails userDetails) {
         userService.logout(userDetails.getUsername());
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/api/users/me/name")
+    public ResponseEntity<UserProfileResponseDto> updateName(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody @Valid UpdateNameRequestDto request
+    ) {
+        return ResponseEntity.ok(userService.updateName(userDetails.getUsername(), request.getFirst_name(), request.getLast_name()));
+    }
+
+    @PutMapping("/api/users/me/email")
+    public ResponseEntity<EmailUpdateResponseDto> updateEmail(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody @Valid UpdateEmailRequestDto request
+    ) {
+        return ResponseEntity.ok(userService.updateEmail(userDetails.getUsername(), request.getEmail()));
+    }
+
+    @PutMapping("/api/users/me/password")
+    public ResponseEntity<UserProfileResponseDto> updatePassword(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody @Valid UpdatePasswordRequestDto request
+    ) {
+        return ResponseEntity.ok(userService.updatePassword(userDetails.getUsername(), request.getCurrent_password(), request.getNew_password()));
     }
 }

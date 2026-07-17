@@ -1,5 +1,6 @@
 package com.fintrack.fintrackbackend.service;
 
+import com.fintrack.fintrackbackend.dto.EmailUpdateResponseDto;
 import com.fintrack.fintrackbackend.dto.UserProfileResponseDto;
 import com.fintrack.fintrackbackend.dto.UserRequestDto;
 import com.fintrack.fintrackbackend.dto.UserResponseDto;
@@ -23,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
@@ -157,9 +159,7 @@ public class UserService {
     public UserProfileResponseDto getCurrentUser(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-        if (user.getPasswordChangedAt() == null) {
-            user.setPasswordChangedAt(user.getCreatedAt());
-        }
+        ensurePasswordChangedAt(user);
         return mapper.mapToProfileDto(user);
     }
 
@@ -173,6 +173,78 @@ public class UserService {
         refreshTokenRepository.deleteByUserId(user.getId());
 
         log.info("Çıkış başarılı: email={}", email);
+    }
+
+    @Transactional
+    public UserProfileResponseDto updateName(String email, String firstName, String lastName) {
+        log.info("Ad soyad güncelleme isteği: email={}", email);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        ensurePasswordChangedAt(user);
+        userRepository.save(user);
+
+        log.info("Ad soyad güncelleme başarılı: email={}", email);
+
+        return mapper.mapToProfileDto(user);
+    }
+
+    @Transactional
+    public EmailUpdateResponseDto updateEmail(String email, String newEmail) {
+        log.info("E-posta güncelleme isteği: email={}", email);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        if (!newEmail.equals(user.getEmail()) && userRepository.findByEmail(newEmail).isPresent()) {
+            log.warn("E-posta güncelleme başarısız, email zaten mevcut: email={}", newEmail);
+            throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
+        }
+
+        user.setEmail(newEmail);
+        userRepository.save(user);
+
+        String token = jwtUtil.generateToken(user.getEmail());
+        RefreshToken refreshToken = createRefreshToken(user);
+
+        log.info("E-posta güncelleme başarılı: email={}", newEmail);
+
+        return EmailUpdateResponseDto.builder()
+                .email(user.getEmail())
+                .token(token)
+                .refreshToken(refreshToken.getToken())
+                .build();
+    }
+
+    @Transactional
+    public UserProfileResponseDto updatePassword(String email, String currentPassword, String newPassword) {
+        log.info("Şifre güncelleme isteği: email={}", email);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            log.warn("Şifre güncelleme başarısız, mevcut şifre hatalı: email={}", email);
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPasswordChangedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        log.info("Şifre güncelleme başarılı: email={}", email);
+
+        return mapper.mapToProfileDto(user);
+    }
+
+    private void ensurePasswordChangedAt(User user) {
+        if (user.getPasswordChangedAt() == null) {
+            user.setPasswordChangedAt(user.getCreatedAt());
+            userRepository.save(user);
+        }
     }
 
     private RefreshToken createRefreshToken(User user) {
