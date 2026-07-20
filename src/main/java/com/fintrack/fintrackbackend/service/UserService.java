@@ -5,11 +5,13 @@ import com.fintrack.fintrackbackend.dto.UserProfileResponseDto;
 import com.fintrack.fintrackbackend.dto.UserRequestDto;
 import com.fintrack.fintrackbackend.dto.UserResponseDto;
 import com.fintrack.fintrackbackend.entity.AuthProvider;
+import com.fintrack.fintrackbackend.entity.PasswordResetCode;
 import com.fintrack.fintrackbackend.entity.RefreshToken;
 import com.fintrack.fintrackbackend.entity.User;
 import com.fintrack.fintrackbackend.exception.BusinessException;
 import com.fintrack.fintrackbackend.exception.ErrorCode;
 import com.fintrack.fintrackbackend.mapper.UserMapper;
+import com.fintrack.fintrackbackend.repository.PasswordResetCodeRepository;
 import com.fintrack.fintrackbackend.repository.RefreshTokenRepository;
 import com.fintrack.fintrackbackend.repository.UserRepository;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
@@ -23,6 +25,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -37,15 +40,23 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final PasswordResetCodeRepository passwordResetCodeRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final UserMapper mapper;
+    private final EmailSender emailSender;
 
     @Value("${google.client-id}")
     private String googleClientId;
 
     @Value("${jwt.refresh-expiration}")
     private Long refreshExpiration;
+
+    @Value("${password-reset.code-expiration}")
+    private Long resetCodeExpiration;
+
+    @Value("${password-reset.token-expiration}")
+    private Long resetTokenExpiration;
 
     public UserResponseDto registerUser(UserRequestDto dto) {
         log.info("Kayıt isteği: email={}", dto.getEmail());
@@ -238,6 +249,78 @@ public class UserService {
         log.info("Şifre güncelleme başarılı: email={}", email);
 
         return mapper.mapToProfileDto(user);
+    }
+
+    @Transactional
+    public void sendPasswordResetCode(String email) {
+        log.info("Şifre sıfırlama kodu isteği: email={}", email);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        passwordResetCodeRepository.deleteByUserId(user.getId());
+
+        String code = generateResetCode();
+        PasswordResetCode resetCode = PasswordResetCode.builder()
+                .user(user)
+                .code(code)
+                .expiryDate(Instant.now().plusMillis(resetCodeExpiration))
+                .build();
+        passwordResetCodeRepository.save(resetCode);
+
+        emailSender.sendPasswordResetCode(user.getEmail(), code);
+
+        log.info("Şifre sıfırlama kodu gönderildi: email={}", email);
+    }
+
+    @Transactional
+    public String verifyPasswordResetCode(String email, String code) {
+        log.info("Şifre sıfırlama kodu doğrulama isteği: email={}", email);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        PasswordResetCode resetCode = passwordResetCodeRepository.findByUserIdAndCodeAndUsedFalse(user.getId(), code)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_RESET_CODE));
+
+        if (resetCode.isExpired()) {
+            throw new BusinessException(ErrorCode.INVALID_RESET_CODE);
+        }
+
+        resetCode.setUsed(true);
+        resetCode.setResetToken(UUID.randomUUID().toString());
+        resetCode.setResetTokenExpiryDate(Instant.now().plusMillis(resetTokenExpiration));
+        passwordResetCodeRepository.save(resetCode);
+
+        log.info("Şifre sıfırlama kodu doğrulandı: email={}", email);
+
+        return resetCode.getResetToken();
+    }
+
+    @Transactional
+    public void resetPassword(String resetToken, String newPassword) {
+        log.info("Şifre sıfırlama isteği alındı");
+
+        PasswordResetCode resetCode = passwordResetCodeRepository.findByResetTokenAndUsedTrue(resetToken)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_RESET_TOKEN));
+
+        if (resetCode.isResetTokenExpired()) {
+            throw new BusinessException(ErrorCode.INVALID_RESET_TOKEN);
+        }
+
+        User user = resetCode.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPasswordChangedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        passwordResetCodeRepository.delete(resetCode);
+
+        log.info("Şifre sıfırlama başarılı: email={}", user.getEmail());
+    }
+
+    private String generateResetCode() {
+        int code = new SecureRandom().nextInt(1_000_000);
+        return String.format("%06d", code);
     }
 
     private void ensurePasswordChangedAt(User user) {

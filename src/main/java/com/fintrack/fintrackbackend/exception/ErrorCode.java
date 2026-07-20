@@ -13,6 +13,8 @@ public enum ErrorCode {
     TRANSACTION_NOT_FOUND(1006, "İşlem bulunamadı.", HttpStatus.NOT_FOUND),
     BUDGET_NOT_FOUND(1007, "Bütçe bulunamadı.", HttpStatus.NOT_FOUND),
     GOAL_NOT_FOUND(1008, "Hedef bulunamadı.", HttpStatus.NOT_FOUND),
+    INVALID_RESET_CODE(1009, "Kod hatalı veya süresi dolmuş.", HttpStatus.BAD_REQUEST),
+    INVALID_RESET_TOKEN(1010, "İşlem geçersiz veya süresi dolmuş.", HttpStatus.BAD_REQUEST),
     INTERNAL_SERVER_ERROR(9000, "Sunucu hatası oluştu.", HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final int code;
